@@ -1,10 +1,12 @@
 {
-  "name": "bird-v2",
+  "name": "gulp-bird",
+  "version": "0.0.1",
   "description": "bird-v2",
-  "version": "0.1.0",
-  "homepage": "",
+  "keywords": ["bird","gulp"],
+  "homepage": "https://github.com/chenchengxing/bird-v2",
   "author": {
-    "name": "z.w. y.b"
+    "name": "ccx",
+    "email" : "ccxsungodzzx@gmail.com"
   },
   "dependencies": {
     "dummy-json": "~0.0.2"

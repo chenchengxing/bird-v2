@@ -32,7 +32,7 @@ var Transpond = require("./transpond");
 var transpond = new Transpond().transpond;
 
 module.exports = {
-  start: function (params) {
+  start: function (params, rules) {
     var servers = params || {};
     var serverList = [];
     for (var i in servers) {
@@ -48,17 +48,17 @@ module.exports = {
         if (servers[port].ignoreRegExp && req.url.match(servers[port].ignoreRegExp)) {
           console.log("ignore request:" + req.url);
           if (typeof transpond === "function") {
-            transpond(req, res);
+            transpond(req, res, rules);
           }
           return false;
         }
 
         var pathHandle = function (realPath) {
-          console.log(realPath);
+          // console.log(realPath);
           fs.stat(realPath, function (err, stats) {
             if (err) {
               if (typeof transpond === "function") {
-                transpond(req, res);
+                transpond(req, res, rules);
               } else {
                 //console.log(req.url + " 404");
                 res.writeHead(404, {
