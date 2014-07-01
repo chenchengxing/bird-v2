@@ -1,0 +1,12 @@
+{
+  "name": "bird-v2",
+  "description": "bird-v2",
+  "version": "0.1.0",
+  "homepage": "",
+  "author": {
+    "name": "z.w. y.b"
+  },
+  "dependencies": {
+    "dummy-json": "~0.0.2"
+  }
+}
