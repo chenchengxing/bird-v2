@@ -80,6 +80,7 @@ module.exports = {
                   // }));
                   var o = JSON.parse(content);
                   var resultJSON = generate(o);
+                  res.setHeader("Content-Type", 'application/json;charset=UTF-8');
                   res.write( JSON.stringify( resultJSON ) );
                   // res.write(JSON.stringify({
                   //   code: 200,
