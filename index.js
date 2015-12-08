@@ -1,259 +1,139 @@
-var http = require("http");
-var url = require("url");
-var fs = require("fs");
-var path = require("path");
-var mime = require("./mime").types;
-var zlib = require("zlib");
-var config = require("./config");
-var utils = require("./utils");
-var dummyjson = require('dummy-json');
-var dummyHelpers = {
-  dateUTC: function (min, max, options) {
-    var time = dummyHelpers.timeUTC(min, max, options);
-    return time - time%(24*60*60*1000);
-  },
-  timeUTC: function (min, max, options) {
-    var minTime = NewDate(min).getTime(),
-        maxTime = NewDate(max).getTime();
-    return randomInt(minTime, maxTime);
-  },
-  animals: function(options) {
-    var animals = ['cat', 'dog', 'cow', 'wolf', 'giraffe'],
-        rIndex = randomInt(0, animals.length);
-    return animals[rIndex];
-  },
-  genders: function (options) {
-    var genders = ['male', 'female'],
-        rIndex = randomInt(0, genders.length);
-    return genders[rIndex];
+var express = require('express')
+var fs = require('fs')
+var url = require('url')
+var path = require('path')
+var request = require('request')
+
+var colors = require('colors');
+var http = require('http');
+var cheerio = require('cheerio')
+
+
+/**
+ * start bird with config
+ * @param  {Object} config bird-configuration
+ * @return {undefined}
+ */
+module.exports = function start(config) {
+  if (!config || !config.staticFileRootDirPath || !config.server || !config.uuap_server || !config.username) {
+    console.log('check your configuration, pls')
+    return;
   }
-};
-var Transpond = require("./transpond");
-var transpond = new Transpond().transpond;
+  var UUAP_SERVER = config.uuap_server;
+  var TARGET_SERVER = config.server;
+  var PASSWORD_SUFFIX = config.password_suffix;
+  var USERNAME = config.username;
+  // jar to store cookies
+  var jar = request.jar();
+  request({
+    url: UUAP_SERVER,
+    jar: jar
+  }, function(error, response, body) {
+    // use cheerio to parse dom
+    var $ = cheerio.load(body);
+    var hiddenInputs = $('#fm1 input[type=hidden]');
 
-module.exports = {
-  start: function (params, rules) {
-    var servers = params || {};
-    var serverList = [];
-    for (var i in servers) {
-      var server = http.createServer(function (req, res) {
-        var port = req.headers.host.split(":")[1] || 80;
-        var pathname = url.parse(req.url).pathname;
-        var realPath = "";
-        if (pathname.slice(-1) === "/") {
-          pathname += config.Default.file;
-        }
-        realPath = path.join(servers[port].basePath, path.normalize(pathname.replace(/\.\./g, "")));
-        //匹配忽略列表，若匹配直接抛给回调函数
-        if (servers[port].ignoreRegExp && req.url.match(servers[port].ignoreRegExp)) {
-          console.log("ignore request:" + req.url);
-          if (typeof transpond === "function") {
-            transpond(req, res, rules);
-          }
-          return false;
-        }
+    var lt = $(hiddenInputs.get(0)).val();
+    var execution = $(hiddenInputs.get(1)).val();
+    var type = 1;
+    var _eventId = 'submit';
+    var rememberMe = 'on';
+    var username = USERNAME;
+    var password = USERNAME + PASSWORD_SUFFIX;
 
-        var pathHandle = function (realPath) {
-          // console.log(realPath);
-          fs.stat(realPath, function (err, stats) {
-            if (err) {
-              if (typeof transpond === "function") {
-                transpond(req, res, rules);
-              } else {
-                //console.log(req.url + " 404");
-                res.writeHead(404, {
-                  "Content-Type": "text/plain"
-                });
-                res.write("This request URL " + pathname + " was not found on this server.");
-                res.end();
-              }
-            } else {
-              if (stats.isDirectory()) {
-                realPath = path.join(realPath, "/", config.Welcome.file);
-                pathHandle(realPath);
-              } else {
-                if ( realPath.indexOf('.json')>-1 && !realPath.match('locale') ) {
-                  // fs.stat( realPath, function (err, stats) {
-                  var content = fs.readFileSync(realPath, "utf-8");
-                  // res.write(JSON.stringify( {
-                  //     code: 200
-                  // }));
-                  var o = JSON.parse(content);
-                  var resultJSON = generate(o);
-                  res.setHeader("Content-Type", 'application/json;charset=UTF-8');
-                  res.write( JSON.stringify( resultJSON ) );
-                  // res.write(JSON.stringify({
-                  //   code: 200,
-                  //   message: 'ok',
-                  //   data: resultJSON
-                  // }));
-                  res.end();
-                  // });
-                //利用dummy-json将djson生成为random的json测试数据
-                } else if (realPath.indexOf('.djson')>-1 && !realPath.match('locale')) {
-                  var content = fs.readFileSync(realPath, "utf-8");
-                  var resultDummy = dummyjson.parse(content, {helpers:dummyHelpers});
-                  res.write( resultDummy );
-                  res.end();
-                } else {
-                  res.setHeader('Accept-Ranges', 'bytes');
-                  var ext = path.extname(realPath);
-                  ext = ext ? ext.slice(1) : 'unknown';
-                  var contentType = mime[ext] || "text/plain";
-                  res.setHeader("Content-Type", contentType);
-                  var lastModified = stats.mtime.toUTCString();
-                  var ifModifiedSince = "If-Modified-Since".toLowerCase();
-                  res.setHeader("Last-Modified", lastModified);
-                  //jsp动态文件简单支持
-                  if (ext === "jsp") {
-                    var content = fs.readFileSync(realPath, "utf-8");
-                    content = content.replace(/<%@ page.*|.*%>/g, "");
-                    content = content.replace(/<jsp:include page="(.*)"\/>/g, function (strpath) {
-                      return fs.readFileSync(path.join(path.dirname(realPath), strpath.replace(/^[^"]+"|"[^"]+$/g, "")), "utf-8");
-                    });
-                    res.write(content);
-                    res.end();
-                    return false;
-                  }
-                  if (ext.match(config.Expires.fileMatch)) {
-                    var expires = new Date();
-                    expires.setTime(expires.getTime() + config.Expires.maxAge * 1000);
-                    res.setHeader("Expires", expires.toUTCString());
-                    res.setHeader("Cache-Control", "max-age=" + config.Expires.maxAge);
-                  }
-                  if (req.headers[ifModifiedSince] && lastModified === req.headers[ifModifiedSince]) {
-                    //console.log(req.url + " 304");
-                    res.writeHead(304, "Not Modified");
-                    res.end();
-                  } else {
-                    var compressHandle = function (raw, statusCode, reasonPhrase) {
-                      var stream = raw;
-                      var acceptEncoding = req.headers['accept-encoding'] || "";
-                      var matched = ext.match(config.Compress.match);
-                      if (matched && acceptEncoding.match(/\bgzip\b/)) {
-                        res.setHeader("Content-Encoding", "gzip");
-                        stream = raw.pipe(zlib.createGzip());
-                      } else if (matched && acceptEncoding.match(/\bdeflate\b/)) {
-                        res.setHeader("Content-Encoding", "deflate");
-                        stream = raw.pipe(zlib.createDeflate());
-                      }
-                      //console.log(req.url + " " + statusCode);
-                      res.writeHead(statusCode, reasonPhrase);
-                      stream.pipe(res);
-                    };
-                    var raw = {};
-                    if (req.headers["range"]) {
-                      var range = utils.parseRange(req.headers["range"], stats.size);
-                      if (range) {
-                        res.setHeader("Content-Range", "bytes " + range.start + "-" + range.end + "/" + stats.size);
-                        res.setHeader("Content-Length", (range.end - range.start + 1));
-                        raw = fs.createReadStream(realPath, {
-                          "start": range.start,
-                          "end": range.end
-                        });
-                        compressHandle(raw, 206, "Partial Content");
-                      } else {
-                        //console.log(req.url + " 416");
-                        res.removeHeader("Content-Length");
-                        res.writeHead(416, "Request Range Not Satisfiable");
-                        res.end();
-                      }
-                    } else {
-                      raw = fs.createReadStream(realPath);
-                      compressHandle(raw, 200, "Ok");
-                    }
-                  }
-                }
-              }
-            }
-          });
+    var sessionId = response.headers['set-cookie'][0].split(';')[0];
+    // mimic uuap login
+    request.post({
+      url: UUAP_SERVER + '/login',
+      form: {
+        username: username,
+        password: password,
+        rememberMe: rememberMe,
+        _eventId: _eventId,
+        type: type,
+        execution: execution,
+        lt: lt
+      },
+      jar: jar
+    }, function(err, httpResponse, body) {
+      // request the logined uuap again, and let it redirect for us
+      var toUrl = UUAP_SERVER + '/login?service=' + encodeURIComponent(TARGET_SERVER);
+      request({
+        url: toUrl,
+        jar: jar
+      }, function(error, response, body) {
+        // do nothing, jar record the session automatically
+        // var cookies = jar.getCookies(TARGET_SERVER);
+      })
+    })
+  });
+
+  // setup bird app
+  var app = new express()
+  app.all('*', function(req, res, next) {
+    var urlParsed = url.parse(req.url);
+    var filePath = resolveFilePath(config.staticFileRootDirPath, urlParsed.pathname);
+    fs.stat(filePath, function(err, stats) {
+      if (err) {
+        // proxy to target server
+        var forwardUrl = url.resolve(config.server, urlParsed.path);
+        // log forwarding message
+        console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
+        // set up forward request
+        var headers = req.headers;
+        headers.cookie = jar.getCookies(TARGET_SERVER);
+        var urlOptions = {
+          host: url.parse(TARGET_SERVER).hostname,
+          port: url.parse(TARGET_SERVER).port,
+          path: urlParsed.path,
+          method: req.method,
+          headers: headers
         };
-        pathHandle(realPath);
-      });
+        var forwardRequest = http.request(urlOptions, function(response) {
+          // set headers to the headers in origin request
+          res.writeHead(response.statusCode, response.headers);
+          response.on('data', function(chunk) {
+            res.write(chunk);
+          });
+          response.on('end', function() {
+            res.end();
+          });
+        });
+        forwardRequest.on('error', function(e) {
+          console.error('problem with request: ' + e.message);
+        });
 
-      server.listen(i);
+        req.addListener('data', function(chunk) {
+          forwardRequest.write(chunk);
+        });
 
-      console.log("A server runing at port: " + i + ".");
+        req.addListener('end', function() {
+          forwardRequest.end();
+        });
+      } else {
+        // server as static file
+        fs.readFile(filePath, function(err, content) {
+          res.write(content);
+          res.end();
+        })
+      }
+    })
 
-      serverList.push(server);
-    }
-  }
+  })
+  // go!
+  app.listen(config.bird_port)
+  console.log('============', 'BIRD-SERVER'.rainbow, 'RUNNING at', config.bird_port, '===============');
 };
 
-function generate(jsonPattern) {
-  try{
-    var matches = jsonPattern[0].match(/{{repeat\((\d),(\d)\)}}/);
-    var repeatCount = randomBetween(matches[1], matches[2]);
-    var obj = {
-      code: 200,
-      message: 'ok',
-      data: []
-    };
-    for (var i = 0; i < repeatCount; i++) {
-      var item = {};
-      var dataPattern = jsonPattern[1];
-      var keys = Object.keys(dataPattern);
-      for (var j = 0; j < keys.length; j++) {
-        item[keys[j]] = generatePattern(dataPattern[keys[j]]);
-      };
-      // var item = jsonPattern[1];
-      obj.data.push(item);
-    };
-    return obj;
-  } catch ( e ){
-    return jsonPattern;
-    // return undefined;
+/**
+ * resolve static file path,, take care of welcome file
+ * @param  {String} staticFileRootDirPath
+ * @param  {String} pathname              
+ * @return {String} working path
+ */
+function resolveFilePath (staticFileRootDirPath, pathname) {
+  if (pathname === '/') { // resolve welcome file
+    return path.join(staticFileRootDirPath, 'index.html')
   }
-}
-
-function randomBetween(a, b) {
-  var random = Math.random() * (b - a + 1);
-  return Math.floor(~~a + random);
-}
-
-function generatePattern(pattern) {
-  // var functionString = pattern.match(/{{([\w|(|)]*)}}/)[1];
-  if ( pattern.match( 'function' ) ) {
-    return eval( pattern );
-  } else {
-    try {
-      var functionString = pattern.replace(/\{\{/, '').replace(/}}/, '');
-      return eval('g.' + functionString);
-    } catch (e) {
-      return pattern;
-    }
-  }
-}
-var g = {
-  index: function () {
-    return Math.floor(Math.random() * 10);
-  },
-  guid: function () {
-    return Math.floor(Math.random() * 10);
-  },
-  bool: function () {
-    return Math.random() > 0.5;
-  },
-  integer: function (a, b) {
-    var random = Math.random() * (b - a + 1);
-    return Math.floor(~~a + random);
-  }
-};
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-//解决ie new date()带参数bug问题
-function NewDate(timeString) {
-  var dates = timeString.split(' '),
-      ymd = dates[0].split('-'),
-      date = new Date();
-  date.setUTCFullYear(ymd[0], ymd[1] - 1, ymd[2]);
-  if (dates[1]) {
-    time = dates[1] && dates[1].split(':');
-    date.setUTCHours(Number(time[0]), Number(time[1]), Number(time[2]), 0);
-  } else {
-    date.setUTCHours(0, 0, 0, 0);
-  }
-  return date;
+  return path.join(staticFileRootDirPath, pathname);
 }
