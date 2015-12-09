@@ -8,4 +8,6 @@
 
 ## todo
 
-- switching user
+- switching user on site
+- switch user on cli
+- reconnect when session expires
