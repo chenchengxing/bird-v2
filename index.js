@@ -15,6 +15,12 @@ var cheerio = require('cheerio')
  * @return {undefined}
  */
 module.exports = function start(config) {
+  if (config && Array.isArray(config)) {
+    for (var i = 0; i < config.length; i++) {
+      start(config[i])
+    }
+    return;
+  }
   if (!config || !config.staticFileRootDirPath || !config.server || !config.uuap_server || !config.username) {
     console.log('check your configuration, pls')
     return;
