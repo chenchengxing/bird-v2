@@ -3,11 +3,15 @@ var fs = require('fs')
 var url = require('url')
 var path = require('path')
 var request = require('request')
-
+// request.debug = true;
 var colors = require('colors');
-var http = require('http');
+// var http = require('http');
 var cheerio = require('cheerio')
 
+var http = require('http-debug').http;
+// var https = require('http-debug').https; 
+ 
+// http.debug = 2;
 
 /**
  * start bird with config
@@ -45,7 +49,7 @@ module.exports = function start(config) {
     var _eventId = 'submit';
     var rememberMe = 'on';
     var username = USERNAME;
-    var password = USERNAME + PASSWORD_SUFFIX;
+    var password = USERNAME + (PASSWORD_SUFFIX || '');
 
     var sessionId = response.headers['set-cookie'][0].split(';')[0];
     // mimic uuap login
@@ -63,7 +67,8 @@ module.exports = function start(config) {
       jar: jar
     }, function(err, httpResponse, body) {
       // request the logined uuap again, and let it redirect for us
-      var toUrl = UUAP_SERVER + '/login?service=' + encodeURIComponent(TARGET_SERVER);
+      // erp feapps need addition routing policy...
+      var toUrl = TARGET_SERVER + (config.bprouting || + '')
       request({
         url: toUrl,
         jar: jar
@@ -87,7 +92,8 @@ module.exports = function start(config) {
         console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
         // set up forward request
         var headers = req.headers;
-        headers.cookie = jar.getCookies(TARGET_SERVER);
+        headers.cookie = redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
+
         var urlOptions = {
           host: url.parse(TARGET_SERVER).hostname,
           port: url.parse(TARGET_SERVER).port,
@@ -142,4 +148,20 @@ function resolveFilePath (staticFileRootDirPath, pathname) {
     return path.join(staticFileRootDirPath, 'index.html')
   }
   return path.join(staticFileRootDirPath, pathname);
+}
+
+/**
+ * get the normalized cookie from jar
+ * @param  {Array} cookieArray
+ * @return {String} cookie string used in headers
+ */
+function redeemCookieFromJar (cookieArray) {
+  var result = '';
+  for (var i = 0; i < cookieArray.length; i++) {
+    result += cookieArray[i].key + '=' + cookieArray[i].value + ';';
+    if (i !== cookieArray.length - 1) {
+      result += ' ';
+    }
+  }
+  return result;
 }
