@@ -128,7 +128,7 @@ module.exports = function start(config) {
   })
   // go!
   app.listen(config.bird_port)
-  console.log('============', 'BIRD-SERVER'.rainbow, 'RUNNING at', config.bird_port, '===============');
+  console.log('BIRD'.rainbow, '============', config.name, 'RUNNING at', 'http://localhost:' + config.bird_port, '===============', 'BIRD'.rainbow);
 };
 
 /**
