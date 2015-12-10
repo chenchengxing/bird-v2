@@ -18,6 +18,7 @@ var BIRD_CHANGE_USER_PATHNAME = '/bbbbiiiirrrrdddd'
 var birdAuth = require('./auth')
 
 var BIRD_USER_SCRIPT = fs.readFileSync('./change-user-script.js', 'utf8');
+var BIRD_EXTEND_SCRIPT = fs.readFileSync('./bird-extend-script.js', 'utf8');
 
 /**
  * start bird with config
@@ -39,6 +40,7 @@ module.exports = function start(config) {
   var TARGET_SERVER = config.server;
   var PASSWORD_SUFFIX = config.password_suffix;
   var USERNAME = config.username;
+  var DEV_TOOL = config.dev_tool;
   // jar to store cookies
   var jar = request.jar();
   
@@ -99,12 +101,15 @@ module.exports = function start(config) {
         } else {
           // server as static file
           fs.readFile(filePath, function(err, buffer) {
-            if (config.dev_tool && isHtmlPage(buffer)) {
+            if (isHtmlPage(buffer)) {
               // add something nasty in it, that's where bird dev-tool exists
               var $ = cheerio.load(buffer.toString('utf-8'));
-              $('head').append('<script type="text/javascript">' + BIRD_USER_SCRIPT + '</script>')
-
-              // console.log($.html())
+              $('head').append('<script type="text/javascript">' + BIRD_EXTEND_SCRIPT + '</script>')
+              $('head').append('<script type="text/javascript">window.birdv2.config=' + JSON.stringify(config) + '</script>')
+              if (DEV_TOOL) {
+                $('head').append('<script type="text/javascript">' + BIRD_USER_SCRIPT + '</script>')
+                // console.log($.html())
+              }
               res.write($.html())
               res.end();
             } else {
