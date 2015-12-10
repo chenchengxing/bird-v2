@@ -13,6 +13,8 @@ module.exports = {
   username: 'songlanying',
   // 密码后缀，没有就留空
   password_suffix: '',
+  // 是否开启dev-tools(提供切换用户等功能)
+  dev_tool: true,
   // feapps专用登录，hard code this one
-  bprouting: 'bprouting/BpFlowRouting?appindex=true'
+  bprouting: ''
 }
