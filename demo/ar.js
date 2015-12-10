@@ -16,5 +16,5 @@ module.exports = {
   // 是否开启dev-tools(提供切换用户等功能)
   dev_tool: true,
   // feapps专用登录，hard code this one
-  bprouting: ''
+  bprouting: 'bprouting/BpFlowRouting?appindex=true'
 }
