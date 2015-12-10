@@ -8,7 +8,6 @@
 
 ## todo
 
-- switching user on site
 - switch user on cli
 - reconnect when session expires
 - track forward history??

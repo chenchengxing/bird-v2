@@ -13,6 +13,12 @@ var http = require('http-debug').http;
  
 // http.debug = 2;
 
+var BIRD_CHANGE_USER_PATHNAME = '/bbbbiiiirrrrdddd'
+
+var birdAuth = require('./auth')
+
+var BIRD_USER_SCRIPT = fs.readFileSync('./change-user-script.js', 'utf8');
+
 /**
  * start bird with config
  * @param  {Object} config bird-configuration
@@ -35,101 +41,80 @@ module.exports = function start(config) {
   var USERNAME = config.username;
   // jar to store cookies
   var jar = request.jar();
-  request({
-    url: UUAP_SERVER,
-    jar: jar
-  }, function(error, response, body) {
-    // use cheerio to parse dom
-    var $ = cheerio.load(body);
-    var hiddenInputs = $('#fm1 input[type=hidden]');
-
-    var lt = $(hiddenInputs.get(0)).val();
-    var execution = $(hiddenInputs.get(1)).val();
-    var type = 1;
-    var _eventId = 'submit';
-    var rememberMe = 'on';
-    var username = USERNAME;
-    var password = USERNAME + (PASSWORD_SUFFIX || '');
-
-    var sessionId = response.headers['set-cookie'][0].split(';')[0];
-    // mimic uuap login
-    request.post({
-      url: UUAP_SERVER + '/login',
-      form: {
-        username: username,
-        password: password,
-        rememberMe: rememberMe,
-        _eventId: _eventId,
-        type: type,
-        execution: execution,
-        lt: lt
-      },
-      jar: jar
-    }, function(err, httpResponse, body) {
-      // request the logined uuap again, and let it redirect for us
-      // erp feapps need addition routing policy...
-      var toUrl = TARGET_SERVER + (config.bprouting || + '')
-      request({
-        url: toUrl,
-        jar: jar
-      }, function(error, response, body) {
-        // do nothing, jar record the session automatically
-        // var cookies = jar.getCookies(TARGET_SERVER);
-      })
-    })
-  });
+  
+  birdAuth(config, jar);
 
   // setup bird app
   var app = new express()
   app.all('*', function(req, res, next) {
     var urlParsed = url.parse(req.url);
     var filePath = resolveFilePath(config.staticFileRootDirPath, urlParsed.pathname);
-    fs.stat(filePath, function(err, stats) {
-      if (err) {
-        // proxy to target server
-        var forwardUrl = url.resolve(config.server, urlParsed.path);
-        // log forwarding message
-        console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
-        // set up forward request
-        var headers = req.headers;
-        headers.cookie = redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
-
-        var urlOptions = {
-          host: url.parse(TARGET_SERVER).hostname,
-          port: url.parse(TARGET_SERVER).port,
-          path: urlParsed.path,
-          method: req.method,
-          headers: headers
-        };
-        var forwardRequest = http.request(urlOptions, function(response) {
-          // set headers to the headers in origin request
-          res.writeHead(response.statusCode, response.headers);
-          response.on('data', function(chunk) {
-            res.write(chunk);
+    if (urlParsed.pathname === BIRD_CHANGE_USER_PATHNAME) {
+      var username = urlParsed.query.split('=')[1]
+      config.username = username;
+      birdAuth(config, jar, function () {
+        console.log(TARGET_SERVER + ' user switched to ', username.black.bgWhite)
+        res.write('changed')
+        res.end();
+      });
+    } else {
+      fs.stat(filePath, function(err, stats) {
+        if (err) {
+          // proxy to target server
+          var forwardUrl = url.resolve(config.server, urlParsed.path);
+          // log forwarding message
+          console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
+          // set up forward request
+          var headers = req.headers;
+          headers.cookie = redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
+          // console.log("headers.cookie", headers.cookie)
+          var urlOptions = {
+            host: url.parse(TARGET_SERVER).hostname,
+            port: url.parse(TARGET_SERVER).port,
+            path: urlParsed.path,
+            method: req.method,
+            headers: headers
+          };
+          var forwardRequest = http.request(urlOptions, function(response) {
+            // set headers to the headers in origin request
+            res.writeHead(response.statusCode, response.headers);
+            response.on('data', function(chunk) {
+              res.write(chunk);
+            });
+            response.on('end', function() {
+              res.end();
+            });
           });
-          response.on('end', function() {
-            res.end();
+          forwardRequest.on('error', function(e) {
+            console.error('problem with request: ' + e.message);
           });
-        });
-        forwardRequest.on('error', function(e) {
-          console.error('problem with request: ' + e.message);
-        });
 
-        req.addListener('data', function(chunk) {
-          forwardRequest.write(chunk);
-        });
+          req.addListener('data', function(chunk) {
+            forwardRequest.write(chunk);
+          });
 
-        req.addListener('end', function() {
-          forwardRequest.end();
-        });
-      } else {
-        // server as static file
-        fs.readFile(filePath, function(err, content) {
-          res.write(content);
-          res.end();
-        })
-      }
-    })
+          req.addListener('end', function() {
+            forwardRequest.end();
+          });
+        } else {
+          // server as static file
+          fs.readFile(filePath, function(err, buffer) {
+            if (config.dev_tool && isHtmlPage(buffer)) {
+              // add something nasty in it, that's where bird dev-tool exists
+              var $ = cheerio.load(buffer.toString('utf-8'));
+              $('head').append('<script type="text/javascript">' + BIRD_USER_SCRIPT + '</script>')
+
+              // console.log($.html())
+              res.write($.html())
+              res.end();
+            } else {
+              res.write(buffer);
+              res.end();
+            }
+          })
+        }
+      })
+    }
 
   })
   // go!
@@ -164,4 +149,10 @@ function redeemCookieFromJar (cookieArray) {
     }
   }
   return result;
+}
+
+function isHtmlPage (buffer) {
+  var temp = buffer.slice(0, 20);
+  var reg = new RegExp('<!DOCTYPE HTML>', 'i')
+  return reg.test(temp.toString('utf-8'))
 }

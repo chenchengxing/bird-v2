@@ -1,4 +1,4 @@
-// require('../index')(require('./ar'))
+require('../index')(require('./ar'))
 
 
 
@@ -12,4 +12,4 @@
 // ...or
 
 
-require('../index')([require('./assess-web'), require('./assess-answer')])
+// require('../index')([require('./assess-web'), require('./assess-answer')])
