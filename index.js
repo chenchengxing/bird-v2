@@ -17,7 +17,7 @@ var BIRD_CHANGE_USER_PATHNAME = '/bbbbiiiirrrrdddd'
 
 var birdAuth = require('./auth')
 
-var BIRD_USER_SCRIPT = fs.readFileSync('./change-user-script.js', 'utf8');
+var BIRD_USER_SCRIPT = fs.readFileSync(path.join(__dirname, 'change-user-script.js'), 'utf8');
 
 /**
  * start bird with config
