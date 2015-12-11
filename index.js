@@ -8,6 +8,7 @@ var colors = require('colors');
 // var http = require('http');
 var cheerio = require('cheerio')
 
+var mime = require('mime-types');
 var http = require('http-debug').http;
 // var https = require('http-debug').https; 
  
@@ -108,6 +109,8 @@ module.exports = function start(config) {
               res.write($.html())
               res.end();
             } else {
+              var mimeType = mime.lookup(path.extname(filePath));
+              res.setHeader('Content-Type', mimeType);
               res.write(buffer);
               res.end();
             }
