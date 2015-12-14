@@ -15,6 +15,7 @@ var http = require('http-debug').http;
 
 var BIRD_CHANGE_USER_PATHNAME = '/bbbbiiiirrrrdddd'
 
+
 var birdAuth = require('./auth')
 
 var BIRD_USER_SCRIPT = fs.readFileSync('./change-user-script.js', 'utf8');
@@ -36,6 +37,9 @@ module.exports = function start(config) {
     console.log('check your configuration, pls')
     return;
   }
+  //session失效时的response的正则匹配表达示
+  var BIRD_LOGOUT_RESP_REG = config.logout_resp_reg || /\"code\"\:208/;
+  var BIRD_LOGOUT_URL_REG = config.logout_url_reg || /login/;
   var UUAP_SERVER = config.uuap_server;
   var TARGET_SERVER = config.server;
   var PASSWORD_SUFFIX = config.password_suffix;
@@ -59,6 +63,14 @@ module.exports = function start(config) {
         res.write('changed')
         res.end();
       });
+    } else if (urlParsed.pathname.match(/logout/)) {
+      // console.log(req.headers)
+      birdAuth(config, jar, function () {
+        console.log(TARGET_SERVER + ' cookie timeout and get a new ', jar.getCookies(TARGET_SERVER))
+        res.writeHead(302, {location:req.headers.referer});
+        res.end();
+      });
+      
     } else {
       fs.stat(filePath, function(err, stats) {
         if (err) {
@@ -78,11 +90,22 @@ module.exports = function start(config) {
             headers: headers
           };
           var forwardRequest = http.request(urlOptions, function(response) {
-            // set headers to the headers in origin request
-            res.writeHead(response.statusCode, response.headers);
-            response.on('data', function(chunk) {
-              res.write(chunk);
-            });
+            //check if cookie is timeout
+            if (response.headers.location && response.headers.location.match(BIRD_LOGOUT_URL_REG)) {
+               birdAuth(config, jar, function () {
+                 console.log(TARGET_SERVER + ' cookie timeout and get a new ', jar.getCookies(TARGET_SERVER))
+                 response.headers.location = urlParsed.path;
+                 res.writeHead(response.statusCode, response.headers);
+                 res.end();
+               });
+             } else{
+              // set headers to the headers in origin request
+              res.writeHead(response.statusCode, response.headers);
+              response.on('data', function(chunk) {
+                res.write(chunk);
+              });
+             }
+            
             response.on('end', function() {
               res.end();
             });
@@ -161,3 +184,4 @@ function isHtmlPage (buffer) {
   var reg = new RegExp('<!DOCTYPE HTML>', 'i')
   return reg.test(temp.toString('utf-8'))
 }
+
