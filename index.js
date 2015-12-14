@@ -8,6 +8,7 @@ var colors = require('colors');
 // var http = require('http');
 var cheerio = require('cheerio')
 
+var mime = require('mime-types');
 var http = require('http-debug').http;
 // var https = require('http-debug').https; 
  
@@ -18,8 +19,11 @@ var BIRD_CHANGE_USER_PATHNAME = '/bbbbiiiirrrrdddd'
 
 var birdAuth = require('./auth')
 
-var BIRD_USER_SCRIPT = fs.readFileSync('./change-user-script.js', 'utf8');
-var BIRD_EXTEND_SCRIPT = fs.readFileSync('./bird-extend-script.js', 'utf8');
+
+var BIRD_USER_SCRIPT = fs.readFileSync(path.join(__dirname, 'change-user-script.js'), 'utf8');
+var BIRD_EXTEND_SCRIPT = fs.readFileSync(path.join(__dirname, 'bird-extend-script.js'), 'utf8');
+
+
 
 /**
  * start bird with config
@@ -136,6 +140,8 @@ module.exports = function start(config) {
               res.write($.html())
               res.end();
             } else {
+              var mimeType = mime.lookup(path.extname(filePath));
+              res.setHeader('Content-Type', mimeType);
               res.write(buffer);
               res.end();
             }
