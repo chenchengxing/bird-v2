@@ -49,6 +49,7 @@ module.exports = function start(config) {
   var PASSWORD_SUFFIX = config.password_suffix;
   var USERNAME = config.username;
   var DEV_TOOL = config.dev_tool;
+  var ROUTER = config.router;
   // jar to store cookies
   var jar = request.jar();
   
@@ -71,28 +72,30 @@ module.exports = function start(config) {
       // console.log(req.headers)
       birdAuth(config, jar, function () {
         console.log(TARGET_SERVER + ' cookie timeout and get a new ', jar.getCookies(TARGET_SERVER))
-        res.writeHead(302, {location:req.headers.referer});
+        res.writeHead(302, {location: req.headers.referer || 'http://' + req.headers.host});
         res.end();
       });
       
     } else {
       fs.stat(filePath, function(err, stats) {
         if (err) {
-          // proxy to target server
-          var forwardUrl = url.resolve(config.server, urlParsed.path);
-          // log forwarding message
-          console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
+          
           // set up forward request
           var headers = req.headers;
           headers.cookie = redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
           // console.log("headers.cookie", headers.cookie)
+          var requestPath = router(urlParsed.path, ROUTER);
           var urlOptions = {
             host: url.parse(TARGET_SERVER).hostname,
             port: url.parse(TARGET_SERVER).port,
-            path: urlParsed.path,
+            path: requestPath,
             method: req.method,
             headers: headers
           };
+          // proxy to target server
+          var forwardUrl = url.resolve(TARGET_SERVER, requestPath);
+          // log forwarding message
+          console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
           var forwardRequest = http.request(urlOptions, function(response) {
             //check if cookie is timeout
             if (response.headers.location && response.headers.location.match(BIRD_LOGOUT_URL_REG)) {
@@ -191,3 +194,18 @@ function isHtmlPage (buffer) {
   return reg.test(temp.toString('utf-8'))
 }
 
+function router (url, router) {
+  var path = '';
+  var reg;
+  if (router) {
+    for (var i in router) {
+      reg = new RegExp(i)
+      if (url.match(reg)) {
+        path = url.replace(reg, router[i]);
+      }
+    }
+  } else {
+    path = url;
+  }
+  return path;
+}
