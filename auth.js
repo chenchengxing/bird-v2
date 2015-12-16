@@ -52,7 +52,7 @@ module.exports = function login(config, jar, cb) {
       }, function(error, response, body) {
         // do nothing, jar record the session automatically
         // var cookies = jar.getCookies(TARGET_SERVER);
-        // console.log(jar);
+        // console.log(jar,'==============');
         (cb || function (){})()
       })
     })

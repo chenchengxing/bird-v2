@@ -50,6 +50,7 @@ module.exports = function start(config) {
   var USERNAME = config.username;
   var DEV_TOOL = config.dev_tool;
   var ROUTER = config.router;
+  var COOKIE = config.cookie;
   // jar to store cookies
   var jar = request.jar();
   
@@ -82,7 +83,7 @@ module.exports = function start(config) {
           
           // set up forward request
           var headers = req.headers;
-          headers.cookie = redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
+          headers.cookie = COOKIE || redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
           // console.log("headers.cookie", headers.cookie)
           var requestPath = router(urlParsed.path, ROUTER);
           var urlOptions = {
@@ -97,6 +98,7 @@ module.exports = function start(config) {
           // log forwarding message
           console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
           var forwardRequest = http.request(urlOptions, function(response) {
+            // var body = '---'
             //check if cookie is timeout
             if (response.headers.location && response.headers.location.match(BIRD_LOGOUT_URL_REG)) {
                birdAuth(config, jar, function () {
@@ -109,11 +111,13 @@ module.exports = function start(config) {
               // set headers to the headers in origin request
               res.writeHead(response.statusCode, response.headers);
               response.on('data', function(chunk) {
+                // body += chunk;
                 res.write(chunk);
               });
              }
             
             response.on('end', function() {
+              // console.log(body)
               res.end();
             });
           });

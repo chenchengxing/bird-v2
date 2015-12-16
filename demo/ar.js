@@ -37,14 +37,12 @@ module.exports = [{
   // 密码后缀，没有就留空
   password_suffix: '',
   // 是否开启dev-tools(提供切换用户等功能)
-  dev_tool: false,
-  // feapps专用登录，hard code this one
-  bprouting: 'bprouting/BpFlowRouting?appindex=true'
+  dev_tool: false
 }, {
     name: 'ar-yanghao',
     bird_port: 7878,
     staticFileRootDirPath: '/home/zp/work/ar-all/ar-web/src/main/webapp/resources',
-    server: 'http://172.21.216.19:8080/ar-web/',
+    server: 'http://172.21.216.20:8080/ar-web/',
     uuap_server: 'http://itebeta.baidu.com:8100',
     username: 'yanghao13',
     password_suffix: '',
@@ -52,6 +50,7 @@ module.exports = [{
       'ar/': 'ar-web/',
       'discovery/': 'dis/'
     },
+    // cookie: 'JSESSIONID=8E821F09A458EBCD8B32874DD04EC04D',
     useLocalData: {
       // 'ar/': 'home/zp/work/ar-all/ar-web/src/main/webapp/front/data',
 
