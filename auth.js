@@ -45,7 +45,8 @@ module.exports = function login(config, jar, cb) {
     }, function(err, httpResponse, body) {
       // request the logined uuap again, and let it redirect for us
       // erp feapps need addition routing policy...
-      var toUrl = TARGET_SERVER + (config.bprouting || + '')
+      // var toUrl = TARGET_SERVER + (config.bprouting || + '')
+      var toUrl = UUAP_SERVER + '/login?service=' + encodeURIComponent(TARGET_SERVER)
       request({
         url: toUrl,
         jar: jar
