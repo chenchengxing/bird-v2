@@ -10,7 +10,8 @@ var cheerio = require('cheerio')
 
 module.exports = function login(config, jar, cb) {
   var UUAP_SERVER = config.uuap_server;
-  var TARGET_SERVER = config.server;
+  //保证路径完整
+  var TARGET_SERVER = config.server.slice('-1') === '/' ? config.server : config.server + '/';
   var PASSWORD_SUFFIX = config.password_suffix;
   var USERNAME = config.username;
   clearTargetServerJar(jar, TARGET_SERVER, UUAP_SERVER);
@@ -52,7 +53,7 @@ module.exports = function login(config, jar, cb) {
       }, function(error, response, body) {
         // do nothing, jar record the session automatically
         // var cookies = jar.getCookies(TARGET_SERVER);
-        // console.log(jar,'==============');
+        // console.log(error,jar,'==============');
         (cb || function (){})()
       })
     })

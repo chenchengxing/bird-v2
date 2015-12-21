@@ -1,16 +1,16 @@
 module.exports = [{
   // 服务名字
-  name: 'ar',
+  name: 'mdm',
   // 服务端口
   bird_port: 3000,
   // 静态文件目录，可以为相对路径，如：../build
-  staticFileRootDirPath: '/home/zp/work/ar/src/main/webapp/resources',
+  staticFileRootDirPath: '/Users/baidu/workspace/build',
   // 测试机地址，是否带`ar`看环境的context
-  server: 'http://cq01-ite-ar-test01.epc:8901/ar/',
+  server: 'http://biqatest.baidu.com/',
   // 该测试机对应的uuap地址
   uuap_server: 'http://itebeta.baidu.com:8100',
   // 你想用谁登录
-  username: 'songlanying',
+  username: 'chenliang03',
   // 密码后缀，没有就留空
   password_suffix: '',
   // 是否开启dev-tools(提供切换用户等功能)
@@ -20,29 +20,12 @@ module.exports = [{
     right: 20
   },
   // feapps专用登录，hard code this one
-  bprouting: 'bprouting/BpFlowRouting?appindex=true'
-}, {
-  // 服务名字
-  name: 'ar2',
-  // 服务端口
-  bird_port: 7676,
-  // 静态文件目录，可以为相对路径，如：../build
-  staticFileRootDirPath: '/home/zp/work/ar/src/main/webapp/resources',
-  // 测试机地址，是否带`ar`看环境的context
-  server: 'http://cq01-ite-ar-test01.epc:8901/ar/',
-  // 该测试机对应的uuap地址
-  uuap_server: 'http://itebeta.baidu.com:8100',
-  // 你想用谁登录
-  username: 'zhangpeng38',
-  // 密码后缀，没有就留空
-  password_suffix: '',
-  // 是否开启dev-tools(提供切换用户等功能)
-  dev_tool: false
+  //bprouting: 'bprouting/BpFlowRouting?appindex=true'
 }, {
     name: 'ar-yanghao',
     bird_port: 7878,
     staticFileRootDirPath: '/home/zp/work/ar-all/ar-web/src/main/webapp/resources',
-    server: 'http://172.21.216.20:8080/ar-web/',
+    server: 'http://172.21.216.14:8080/ar-web/',
     uuap_server: 'http://itebeta.baidu.com:8100',
     username: 'yanghao13',
     password_suffix: '',
@@ -50,9 +33,26 @@ module.exports = [{
       'ar/': 'ar-web/',
       'discovery/': 'dis/'
     },
-    // cookie: 'JSESSIONID=8E821F09A458EBCD8B32874DD04EC04D',
+    cookie: 'JSESSIONID=FEDDE46AA3C61E8B3E29C785BDBE7502',
     useLocalData: {
       // 'ar/': 'home/zp/work/ar-all/ar-web/src/main/webapp/front/data',
+
+  //   }
+  // }, {
+  //   name: 'ar-xuezhi',
+  //   bird_port: 7879,
+  //   staticFileRootDirPath: '/home/zp/work/ar-all/ar-web/src/main/webapp/resources',
+  //   server: 'http://172.21.206.41:8080/ar-web/',
+  //   uuap_server: 'http://itebeta.baidu.com:8100',
+  //   username: 'yanghao13',
+  //   password_suffix: '',
+  //   router: {
+  //     'ar/': 'ar-web/',
+  //     'discovery/': 'dis/'
+  //   },
+  //   cookie: 'JSESSIONID=FF095C68CA7CD50384902B7E881ADAD1',
+  //   useLocalData: {
+  //     // 'ar/': 'home/zp/work/ar-all/ar-web/src/main/webapp/front/data',
 
     }
   }]

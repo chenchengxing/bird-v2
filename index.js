@@ -45,12 +45,13 @@ module.exports = function start(config) {
   var BIRD_LOGOUT_RESP_REG = config.logout_resp_reg || /\"code\"\:208/;
   var BIRD_LOGOUT_URL_REG = config.logout_url_reg || /login/;
   var UUAP_SERVER = config.uuap_server;
-  var TARGET_SERVER = config.server;
   var PASSWORD_SUFFIX = config.password_suffix;
   var USERNAME = config.username;
   var DEV_TOOL = config.dev_tool;
   var ROUTER = config.router;
   var COOKIE = config.cookie;
+  //保证路径完整
+  var TARGET_SERVER = config.server.slice('-1') === '/' ? config.server : config.server + '/';
   // jar to store cookies
   var jar = request.jar();
   
@@ -85,6 +86,7 @@ module.exports = function start(config) {
           var headers = req.headers;
           headers.cookie = COOKIE || redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
           // console.log("headers.cookie", headers.cookie)
+          delete headers['x-requested-with'];
           var requestPath = router(urlParsed.path, ROUTER);
           var urlOptions = {
             host: url.parse(TARGET_SERVER).hostname,
@@ -204,7 +206,7 @@ function router (url, router) {
   if (router) {
     for (var i in router) {
       reg = new RegExp(i)
-      if (url.match(reg)) {
+      if (reg.test(url)) {
         path = url.replace(reg, router[i]);
       }
     }
