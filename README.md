@@ -4,7 +4,7 @@
 
 ### global
 
-- npm install -g bird-v2
+- npm install -g birdv2
 - touch birdfile.js
 - vi birdfile.js
 
@@ -25,7 +25,7 @@ module.exports = {
 
 ### local
 
-- npm install -D bird-v2
+- npm install -D birdv2
 - touch birdfile.js
 - vi birdfile.js
 
