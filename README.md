@@ -20,8 +20,7 @@ module.exports = {
   password_suffix: ''
 };
 ```
-
-- bird
+- bird  `or` bird  -c ../yourPath/birdfile.js
 
 ### local
 
@@ -45,7 +44,75 @@ require('bird')(config)
 
 - node birdfile.js
 
+## config
+- bird的配制可是一个object,也可以是一个array, eg:
+```
+  var config = {
+    name: 'ar',
+    bird_port: 7676,
+    staticFileRootDirPath: '../webapp',
+    server: 'http://xx.xx.com:8901/ar/',
+    uuap_server: 'http://xx.xx.com:8100',
+    username: 'jay',
+    password_suffix: ''
+  };
 
+  `or`
+  var config = [{
+    name: 'ar',
+    bird_port: 7676,
+    staticFileRootDirPath: '../webapp',
+    server: 'http://xx.xx.com:8901/ar/',
+    uuap_server: 'http://xx.xx.com:8100',
+    username: 'jay',
+    password_suffix: ''
+  }, {
+    name: 'ar2',
+    bird_port: 7777,
+    staticFileRootDirPath: '../webapp',
+    server: 'http://xx.xx.com:8902/ar/',
+    uuap_server: 'http://xx.xx.com:82S00',
+    username: 'jay',
+    password_suffix: ''
+  }]
+```
+- 下面是详细的配制说明，*表示必须的配制， #表示正在开发或功能不稳定的配制
+  ```
+  // *服务名字,本配制以ar为例
+  name: 'ar',
+  // *服务端口
+  bird_port: 3000,
+  // *静态文件目录，可以为相对路径，如：../build
+  staticFileRootDirPath: '/home/zp/work/ar/src/main/webapp/resources',
+  // *测试机地址，是否带`ar`看环境的context
+  server: 'http://xx-xx.epc:8901/ar/',
+  // *该测试机对应的uuap地址
+  uuap_server: 'http://uuap_test.com:8100',
+  // *你想用谁登录
+  username: 'who_you_want',
+  // *密码后缀，没有就留空
+  password_suffix: '',
+  // 是否开启dev-tools(提供切换用户等功能)default:false
+  dev_tool: {
+    type: 'input', // #暂时只有这一个，后续加select
+    top: 20,       // 工具上边距
+    right: 20      //右边距
+  },
+  // feapps专用登录，hard code this one. default:false
+  bprouting: 'bprouting/BpFlowRouting?appindex=true',
+  // 是否使用静态的cookie,录bird出问题了你还可以把cookie粘到这里，像旧版一样default:false
+  cookie: 'sessionid=XXXXXXXXXXX',
+  // 转发路由，你可以将本地的请求转发到指定的路径
+  router: {  
+      '/ar': '/ar-web' // 将http://xx-xx.epc:8901/ar/XX/XX -> http://xx-xx.epc:8901/ar-web/XX/XX 
+  },
+  // #当cookie效了重新cookie，当然，你可以重启bird来手动获取.default:true
+  keep_alive: true,
+  // #使用本地的数据，不转发. 当服务器当了，你可以造些假数据来本地测试
+  use_local_data: {
+    '/ar': '/your/data/path'
+  }
+  ```
 ## browser ci api
 
 - 打开浏览器的console,可以执行以下命令：
