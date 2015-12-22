@@ -1,6 +1,6 @@
 {
   "name": "birdv2",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "birdv2 is a proxy server with cas auth built in, originate from `bird`",
   "main": "index.js",
   "scripts": {
