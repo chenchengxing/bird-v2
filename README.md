@@ -2,9 +2,49 @@
 
 ## usage
 
-- vi demo/ar.js 调整自己的配置
-- npm install & node demo/demo.js
-- config请参考demo
+### global
+
+- npm install -g birdv2
+- touch birdfile.js
+- vi birdfile.js
+
+```
+// sample birdfile.js
+module.exports = {
+  name: 'ar',
+  bird_port: 7676,
+  staticFileRootDirPath: '../webapp',
+  server: 'http://xx.xx.com:8901/ar/',
+  uuap_server: 'http://xx.xx.com:8100',
+  username: 'jay',
+  password_suffix: ''
+};
+```
+
+- bird
+
+### local
+
+- npm install -D birdv2
+- touch birdfile.js
+- vi birdfile.js
+
+```
+// sample birdfile.js
+var config = {
+  name: 'ar',
+  bird_port: 7676,
+  staticFileRootDirPath: '../webapp',
+  server: 'http://xx.xx.com:8901/ar/',
+  uuap_server: 'http://xx.xx.com:8100',
+  username: 'jay',
+  password_suffix: ''
+};
+require('bird')(config)
+```
+
+- node birdfile.js
+
 
 ## browser ci api
 
