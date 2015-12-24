@@ -17,7 +17,7 @@ var http = require('http-debug').http;
 var BIRD_CHANGE_USER_PATHNAME = '/bbbbiiiirrrrdddd'
 
 
-var birdAuth = require('./auth')
+var birdAuth;
 
 
 var BIRD_USER_SCRIPT = fs.readFileSync(path.join(__dirname, 'change-user-script.js'), 'utf8');
@@ -37,7 +37,7 @@ module.exports = function start(config) {
     }
     return;
   }
-  if (!config || !config.staticFileRootDirPath || !config.server || !config.uuap_server || !config.username) {
+  if (!config || !config.staticFileRootDirPath || !config.server || !config.username) {
     console.log('check your configuration, pls')
     return;
   }
@@ -55,6 +55,7 @@ module.exports = function start(config) {
   // jar to store cookies
   var jar = request.jar();
   
+  birdAuth = config.auth_standalone ? require('./auth-standalone') : require('./auth');
   birdAuth(config, jar);
 
   // setup bird app
