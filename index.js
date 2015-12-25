@@ -44,9 +44,6 @@ module.exports = function start(config) {
   //session失效时的response的正则匹配表达示
   var BIRD_LOGOUT_RESP_REG = config.logout_resp_reg || /\"code\"\:208/;
   var BIRD_LOGOUT_URL_REG = config.logout_url_reg || /login/;
-  var UUAP_SERVER = config.uuap_server;
-  var PASSWORD_SUFFIX = config.password_suffix;
-  var USERNAME = config.username;
   var DEV_TOOL = config.dev_tool;
   var ROUTER = config.router;
   var COOKIE = config.cookie;
@@ -55,7 +52,7 @@ module.exports = function start(config) {
   // jar to store cookies
   var jar = request.jar();
   
-  birdAuth = config.auth_standalone ? require('./auth-standalone') : require('./auth');
+  birdAuth = config.auth_standalone ? require('./auths/' + config.auth_standalone) : require('./auths/auth');
   birdAuth(config, jar);
 
   // setup bird app
@@ -105,7 +102,7 @@ module.exports = function start(config) {
             //check if cookie is timeout
             if (response.headers.location && response.headers.location.match(BIRD_LOGOUT_URL_REG)) {
                birdAuth(config, jar, function () {
-                 console.log(TARGET_SERVER + ' cookie timeout and get a new ', jar.getCookies(TARGET_SERVER))
+                 console.log(TARGET_SERVER + '302 cookie timeout and get a new ', jar.getCookies(TARGET_SERVER))
                  response.headers.location = urlParsed.path;
                  res.writeHead(response.statusCode, response.headers);
                  res.end();

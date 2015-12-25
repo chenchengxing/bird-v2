@@ -3,7 +3,18 @@ var url = require('url')
 var path = require('path')
 var request = require('request')
 var colors = require('colors');
+/*
+    hi的必要配制
+    name: 'hi xx',
+    bird_port: 7676,
+    staticFileRootDirPath: '../any',
+    auth_standalone: true,
+    server: 'http://10.10.88.88:8888/',
+    auth_url: 'http://10.10.88.88:8888/hi/api/login/loginCS',
+    username: 'admin',
+    password_suffix: ''
 
+*/
 module.exports = function login(config, jar, cb) {
   var AUTH_URL = config.auth_url;
   var HEADERS = config.auth_server_headers || 'Content-Type: application/json';
@@ -23,6 +34,7 @@ module.exports = function login(config, jar, cb) {
     },
     jar: jar
   }, function(error, response, body) {
+    // console.log(error,body);
     (cb || function (){})()
   });
 }

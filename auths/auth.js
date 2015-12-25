@@ -7,7 +7,9 @@ var request = require('request')
 var colors = require('colors');
 // var http = require('http');
 var cheerio = require('cheerio')
-
+/*
+  uuap--默认的登录方式
+*/
 module.exports = function login(config, jar, cb) {
   var UUAP_SERVER = config.uuap_server;
   //保证路径完整
