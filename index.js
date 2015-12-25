@@ -52,7 +52,7 @@ module.exports = function start(config) {
   // jar to store cookies
   var jar = request.jar();
   
-  birdAuth = config.auth_standalone ? require('./auths/' + config.auth_standalone) : require('./auths/auth');
+  birdAuth = config.auth_standalone ? require('./auths/' + config.auth_standalone) : require('./auths/uuap');
   birdAuth(config, jar);
 
   // setup bird app

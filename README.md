@@ -76,7 +76,7 @@ require('bird')(config)
     password_suffix: ''
   }]
 ```
-- 下面是详细的配制说明，*表示必须的配制， #表示正在开发或功能不稳定的配制
+- 下面是详细的配制说明，*表示必须的配制， #表示正在开发或功能不稳定的配制， 其他是可选项
   ```
   // *服务名字,本配制以ar为例
   name: 'ar',
@@ -106,6 +106,8 @@ require('bird')(config)
   router: {  
       '/ar': '/ar-web' // 将http://xx-xx.epc:8901/ar/XX/XX -> http://xx-xx.epc:8901/ar-web/XX/XX 
   },
+  // 登录方式，默认是使用uuap来登录，加载auths/uuap.js default:'uuap'
+  auth_standalone: 'uuap',
   // #当cookie效了重新cookie，当然，你可以重启bird来手动获取.default:true
   keep_alive: true,
   // #使用本地的数据，不转发. 当服务器当了，你可以造些假数据来本地测试
@@ -113,6 +115,12 @@ require('bird')(config)
     '/ar': '/your/data/path'
   }
   ```
+## extendable
+
+- 如果你的项目不是用uuap登录的，那你需要配制auth_standalone选项, 然后在auths/目录下添加上对应的js文件，当然你可以联系我，告诉你项目的地址 及登录帐号， 让我帮你加
+
+
+
 ## browser ci api
 
 - 打开浏览器的console,可以执行以下命令：
