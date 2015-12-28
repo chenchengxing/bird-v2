@@ -55,9 +55,18 @@ module.exports = function start(config) {
   birdAuth = config.auth_standalone ? require('./auths/' + config.auth_standalone) : require('./auths/uuap');
   birdAuth(config, jar);
 
-  // setup bird app
-  var app = new express()
-  app.all('*', function(req, res, next) {
+  if (config.middleware) {
+    return proxy;
+  } else {
+    // setup bird app
+    var app = new express()
+    app.all('*', proxy)
+    // go!
+    app.listen(config.bird_port)
+    console.log('BIRD'.rainbow, '============', config.name, 'RUNNING at', 'http://localhost:' + config.bird_port, '===============', 'BIRD'.rainbow);
+  }
+
+  function proxy (req, res, next) {
     var urlParsed = url.parse(req.url);
     var filePath = resolveFilePath(config.staticFileRootDirPath, urlParsed.pathname);
     if (urlParsed.pathname === BIRD_CHANGE_USER_PATHNAME) {
@@ -79,13 +88,13 @@ module.exports = function start(config) {
     } else {
       fs.stat(filePath, function(err, stats) {
         if (err) {
-          
           // set up forward request
           var headers = req.headers;
           headers.cookie = COOKIE || redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
           // console.log("headers.cookie", headers.cookie)
           delete headers['x-requested-with'];
           var requestPath = router(urlParsed.path, ROUTER);
+          // console.log('requestPath:', requestPath);
           var urlOptions = {
             host: url.parse(TARGET_SERVER).hostname,
             port: url.parse(TARGET_SERVER).port,
@@ -157,10 +166,7 @@ module.exports = function start(config) {
       })
     }
 
-  })
-  // go!
-  app.listen(config.bird_port)
-  console.log('BIRD'.rainbow, '============', config.name, 'RUNNING at', 'http://localhost:' + config.bird_port, '===============', 'BIRD'.rainbow);
+  }
 };
 
 /**
