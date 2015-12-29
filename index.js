@@ -10,8 +10,8 @@ var cheerio = require('cheerio')
 
 var mime = require('mime-types');
 var http = require('http-debug').http;
-// var https = require('http-debug').https; 
- 
+// var https = require('http-debug').https;
+
 // http.debug = 2;
 
 var BIRD_CHANGE_USER_PATHNAME = '/bbbbiiiirrrrdddd'
@@ -41,6 +41,9 @@ module.exports = function start(config) {
     console.log('check your configuration, pls')
     return;
   }
+
+  var mock = config.mock;
+
   //session失效时的response的正则匹配表达示
   var BIRD_LOGOUT_RESP_REG = config.logout_resp_reg || /\"code\"\:208/;
   var BIRD_LOGOUT_URL_REG = config.logout_url_reg || /login/;
@@ -51,7 +54,7 @@ module.exports = function start(config) {
   var TARGET_SERVER = config.server.slice('-1') === '/' ? config.server : config.server + '/';
   // jar to store cookies
   var jar = request.jar();
-  
+
   birdAuth = config.auth_standalone ? require('./auths/' + config.auth_standalone) : require('./auths/uuap');
   birdAuth(config, jar);
 
@@ -69,6 +72,8 @@ module.exports = function start(config) {
   function proxy (req, res, next) {
     var urlParsed = url.parse(req.url);
     var filePath = resolveFilePath(config.staticFileRootDirPath, urlParsed.pathname);
+    var mockFile = mock && mock.map && mock.map[urlParsed.pathname]
+
     if (urlParsed.pathname === BIRD_CHANGE_USER_PATHNAME) {
       var username = urlParsed.query.split('=')[1]
       config.username = username;
@@ -84,7 +89,13 @@ module.exports = function start(config) {
         res.writeHead(302, {location: req.headers.referer || 'http://' + req.headers.host});
         res.end();
       });
-      
+
+    } else if (mockFile) {
+
+      var mockFilePath = resolveFilePath(config.mock.path, mockFile + '.json');
+      var ret = JSON.parse(fs.readFileSync(mockFilePath, 'utf8'));
+      res.json(ret);
+
     } else {
       fs.stat(filePath, function(err, stats) {
         if (err) {
@@ -124,7 +135,7 @@ module.exports = function start(config) {
                 res.write(chunk);
               });
              }
-            
+
             response.on('end', function() {
               // console.log(body)
               res.end();
@@ -172,7 +183,7 @@ module.exports = function start(config) {
 /**
  * resolve static file path,, take care of welcome file
  * @param  {String} staticFileRootDirPath
- * @param  {String} pathname              
+ * @param  {String} pathname
  * @return {String} working path
  */
 function resolveFilePath (staticFileRootDirPath, pathname) {
