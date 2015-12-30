@@ -92,8 +92,8 @@ module.exports = function start(config) {
 
     } else if (mockFile) {
 
-      var mockFilePath = resolveFilePath(config.mock.path, mockFile + '.json');
-      var ret = JSON.parse(fs.readFileSync(mockFilePath, 'utf8'));
+      var mockFilePath = path.join(config.staticFileRootDirPath, config.mock.path, mockFile);
+      var ret = require(mockFilePath);
       res.json(ret);
 
     } else {
