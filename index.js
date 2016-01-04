@@ -85,7 +85,7 @@ module.exports = function start(config) {
           var headers = req.headers;
           headers.cookie = COOKIE || redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
           // console.log("headers.cookie", headers.cookie)
-          delete headers['x-requested-with'];
+          KEEP_ALIVE && (delete headers['x-requested-with']);
           var queryData = ''; //存post请求的query数据
           var requestPath = router(urlParsed.path, ROUTER);
           var urlOptions = {
