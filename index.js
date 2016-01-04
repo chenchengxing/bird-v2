@@ -47,6 +47,7 @@ module.exports = function start(config) {
   var DEV_TOOL = config.dev_tool;
   var ROUTER = config.router;
   var COOKIE = config.cookie;
+  var KEEP_ALIVE = config.keep_alive || false;
   //保证路径完整
   var TARGET_SERVER = config.server.slice('-1') === '/' ? config.server : config.server + '/';
   // jar to store cookies
@@ -85,6 +86,7 @@ module.exports = function start(config) {
           headers.cookie = COOKIE || redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
           // console.log("headers.cookie", headers.cookie)
           delete headers['x-requested-with'];
+          var queryData = ''; //存post请求的query数据
           var requestPath = router(urlParsed.path, ROUTER);
           var urlOptions = {
             host: url.parse(TARGET_SERVER).hostname,
@@ -100,21 +102,35 @@ module.exports = function start(config) {
           var forwardRequest = http.request(urlOptions, function(response) {
             // var body = '---'
             //check if cookie is timeout
-            if (response.headers.location && response.headers.location.match(BIRD_LOGOUT_URL_REG)) {
-               birdAuth(config, jar, function () {
-                 console.log(TARGET_SERVER + '302 cookie timeout and get a new ', jar.getCookies(TARGET_SERVER))
-                 response.headers.location = urlParsed.path;
-                 res.writeHead(response.statusCode, response.headers);
-                 res.end();
-               });
-             } else{
+            if (KEEP_ALIVE && response.headers.location && response.headers.location.match(BIRD_LOGOUT_URL_REG)) {
+              birdAuth(config, jar, function () {
+                console.log(TARGET_SERVER + 'cookie 302  timeout and get a new ', jar.getCookies(TARGET_SERVER))
+                // response.headers.location = urlParsed.path;
+                // res.writeHead(response.statusCode, response.headers);
+                // res.end();
+                urlOptions.headers.cookie = jar.getCookies(TARGET_SERVER);
+                var reforward = http.request(urlOptions, function (response2) {
+                  res.writeHead(response2.statusCode, response2.headers);
+                  response2.on('data', function(chunk) {
+                    res.write(chunk);
+                  });
+                  response2.on('end', function() {
+                    res.end();
+                  });
+                })
+                reforward.write(queryData);
+                reforward.on('error', function(e) {
+                  console.error('problem with request: ' + e.message);
+                });
+              });
+            } else{
               // set headers to the headers in origin request
               res.writeHead(response.statusCode, response.headers);
               response.on('data', function(chunk) {
                 // body += chunk;
                 res.write(chunk);
               });
-             }
+            }
             
             response.on('end', function() {
               // console.log(body)
@@ -126,6 +142,7 @@ module.exports = function start(config) {
           });
 
           req.addListener('data', function(chunk) {
+            queryData += chunk;
             forwardRequest.write(chunk);
           });
 

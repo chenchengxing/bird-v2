@@ -1,5 +1,13 @@
 # This is bird with auth
 
+## why?
+
+首先,bird 是一个 server,用于前端连接后端接口, 以便在本地开发. 他有以下几种能力:
+
+- serve 静态资源
+- 按需求转发请求（birdv2版本中解决了服务端需要登录信息而无法获得请求结果的问题) 注: 第一版bird, 需要 手工配置 headers  , 开发时很不便, 十分痛苦
+- 方便的切换登录用户, 测试时很酸爽（通过页面或者 console 都可）
+
 ## usage
 
 ### global
@@ -39,7 +47,7 @@ var config = {
   username: 'jay',
   password_suffix: ''
 };
-require('bird')(config)
+require('birdv2')(config) //notice: 'birdv2' is thie byname of bird-v2 in npm 
 ```
 
 - node birdfile.js
@@ -108,13 +116,14 @@ require('bird')(config)
   },
   // 登录方式，默认是使用uuap来登录，加载auths/uuap.js default:'uuap'
   auth_standalone: 'uuap',
-  // #当cookie效了重新cookie，当然，你可以重启bird来手动获取.default:true
-  keep_alive: true,
+  // 当cookie效了重新cookie，当然，你可以重启bird来手动获取.default:false
+  keep_alive: false,
   // #使用本地的数据，不转发. 当服务器当了，你可以造些假数据来本地测试
   use_local_data: {
     '/ar': '/your/data/path'
   }
   ```
+
 ## extendable
 
 - 如果你的项目不是用uuap登录的，那你需要配制auth_standalone选项, 然后在auths/目录下添加上对应的js文件，当然你可以联系我，告诉你项目的地址 及登录帐号， 让我帮你加
