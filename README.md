@@ -85,7 +85,7 @@ require('birdv2')(config) //notice: 'birdv2' is thie byname of bird-v2 in npm
   }]
 ```
 - 下面是详细的配制说明，*表示必须的配制， #表示正在开发或功能不稳定的配制， 其他是可选项
-  ```
+```
   // *服务名字,本配制以ar为例
   name: 'ar',
   // *服务端口
@@ -122,7 +122,7 @@ require('birdv2')(config) //notice: 'birdv2' is thie byname of bird-v2 in npm
   use_local_data: {
     '/ar': '/your/data/path'
   }
-  ```
+```
 
 ## extendable
 
