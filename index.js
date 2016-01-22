@@ -10,7 +10,7 @@ var cheerio = require('cheerio')
 
 var mime = require('mime-types');
 var http = require('http-debug').http;
-// var https = require('http-debug').https; 
+var https = require('http-debug').https; 
  
 // http.debug = 2;
 
@@ -83,6 +83,7 @@ module.exports = function start(config) {
           // set up forward request
           var headers = req.headers;
           headers.cookie = COOKIE || redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
+          // headers.host = config.host;
           // console.log("headers.cookie", headers.cookie)
           delete headers['x-requested-with'];
           var requestPath = router(urlParsed.path, ROUTER);
@@ -93,11 +94,12 @@ module.exports = function start(config) {
             method: req.method,
             headers: headers
           };
+          // console.log(headers)
           // proxy to target server
           var forwardUrl = url.resolve(TARGET_SERVER, requestPath);
           // log forwarding message
           console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
-          var forwardRequest = http.request(urlOptions, function(response) {
+          var forwardRequest = https.request(urlOptions, function(response) {
             // var body = '---'
             //check if cookie is timeout
             if (response.headers.location && response.headers.location.match(BIRD_LOGOUT_URL_REG)) {
