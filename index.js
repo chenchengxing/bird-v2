@@ -92,7 +92,8 @@ module.exports = function start(config) {
             port: url.parse(TARGET_SERVER).port,
             path: requestPath,
             method: req.method,
-            headers: headers
+            headers: headers,
+            rejectUnauthorized: false
           };
           // console.log(headers)
           // proxy to target server
