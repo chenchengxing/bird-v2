@@ -50,7 +50,8 @@ module.exports = function login(config, jar, cb) {
       // erp feapps need addition routing policy...
       var toUrl = UUAP_SERVER + '/login?service=' + encodeURIComponent(TARGET_SERVER)
       if (config.bprouting) {
-        toUrl = TARGET_SERVER + (config.bprouting || + '')
+        var bproutingUrl = TARGET_SERVER + (config.bprouting || + '')
+        toUrl = UUAP_SERVER + '/login?service=' + encodeURIComponent(bproutingUrl)
       }
       request({
         url: toUrl,

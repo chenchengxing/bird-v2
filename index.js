@@ -10,8 +10,7 @@ var cheerio = require('cheerio')
 
 var mime = require('mime-types');
 var http = require('http-debug').http;
-// var https = require('http-debug').https;
-
+var https = require('http-debug').https; 
 // http.debug = 2;
 
 var BIRD_CHANGE_USER_PATHNAME = '/bbbbiiiirrrrdddd'
@@ -102,6 +101,7 @@ module.exports = function start(config) {
           // set up forward request
           var headers = req.headers;
           headers.cookie = COOKIE || redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
+          // headers.host = config.host;
           // console.log("headers.cookie", headers.cookie)
           delete headers['x-requested-with'];
           var requestPath = router(urlParsed.path, ROUTER);
@@ -111,13 +111,16 @@ module.exports = function start(config) {
             port: url.parse(TARGET_SERVER).port,
             path: requestPath,
             method: req.method,
-            headers: headers
+            headers: headers,
+            rejectUnauthorized: false
           };
+          // console.log(headers)
           // proxy to target server
           var forwardUrl = url.resolve(TARGET_SERVER, requestPath);
           // log forwarding message
           console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
-          var forwardRequest = http.request(urlOptions, function(response) {
+          var httpOrHttps = url.parse(TARGET_SERVER).protocol === 'http:' ? http: https;
+          var forwardRequest = httpOrHttps.request(urlOptions, function(response) {
             // var body = '---'
             //check if cookie is timeout
             if (response.headers.location && response.headers.location.match(BIRD_LOGOUT_URL_REG)) {
@@ -164,6 +167,7 @@ module.exports = function start(config) {
                 $('head').append('<script type="text/javascript">' + BIRD_USER_SCRIPT + '</script>')
                 // console.log($.html())
               }
+              res.setHeader('Content-Type', mime.lookup('.html'));
               res.write($.html())
               res.end();
             } else {
