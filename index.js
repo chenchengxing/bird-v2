@@ -100,7 +100,8 @@ module.exports = function start(config) {
           var forwardUrl = url.resolve(TARGET_SERVER, requestPath);
           // log forwarding message
           console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
-          var forwardRequest = https.request(urlOptions, function(response) {
+          var httpOrHttps = url.parse(TARGET_SERVER).protocol === 'http:' ? http: https;
+          var forwardRequest = httpOrHttps.request(urlOptions, function(response) {
             // var body = '---'
             //check if cookie is timeout
             if (response.headers.location && response.headers.location.match(BIRD_LOGOUT_URL_REG)) {
@@ -147,6 +148,7 @@ module.exports = function start(config) {
                 $('head').append('<script type="text/javascript">' + BIRD_USER_SCRIPT + '</script>')
                 // console.log($.html())
               }
+              res.setHeader('Content-Type', mime.lookup('.html'));
               res.write($.html())
               res.end();
             } else {
