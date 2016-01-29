@@ -3,15 +3,9 @@ var fs = require('fs')
 var url = require('url')
 var path = require('path')
 var request = require('request')
-// request.debug = true;
 var colors = require('colors');
-// var http = require('http');
-
 var http = require('http-debug').http;
 var https = require('http-debug').https; 
-// http.debug = 2;
-var Promise = require('bluebird');
-var BIRD_CHANGE_USER_PATHNAME = '/bbbbiiiirrrrdddd'
 
 /**
  * start bird with config
@@ -164,6 +158,7 @@ function router (url, router) {
       reg = new RegExp(i)
       if (reg.test(url)) {
         path = url.replace(reg, router[i]);
+        console.log('special route mapping found! converting...', url, 'to', path)
       }
     }
   } else {
