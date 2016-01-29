@@ -36,7 +36,7 @@ module.exports = function (config, jar) {
       },
       jar: jar
     }, function(error, response, body) {
-      // console.log(error,body);
+      console.log(error,body);
       resolve();
     });
   });

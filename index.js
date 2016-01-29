@@ -26,11 +26,14 @@ module.exports = function start(config) {
     return;
   }
   if (!config || !config.staticFileRootDirPath || !config.server || !config.username) {
-    console.log('check your configuration, pls')
+    console.info('check your configuration, pls')
     return;
   }
 
-  var DEV_TOOL = config.dev_tool;
+  if (!config.debug /* silence when not debugging */) {
+    global.console.log = function (){};
+  }
+
   var ROUTER = config.router;
   var COOKIE = config.cookie;
   // var AUTO_INDEX = config.autoIndex ? config.autoIndex.split(/\x20+/) : ['index.html']
@@ -58,7 +61,7 @@ module.exports = function start(config) {
       app.all('*', proxy)
       // go!
       app.listen(config.bird_port)
-      console.log('BIRD'.rainbow, '============', config.name, 'RUNNING at', 'http://localhost:' + config.bird_port, '===============', 'BIRD'.rainbow);
+      console.info('BIRD'.rainbow, '============', config.name, 'RUNNING at', 'http://localhost:' + config.bird_port, '===============', 'BIRD'.rainbow);
     }
   })
 
@@ -78,10 +81,10 @@ module.exports = function start(config) {
       var headers = req.headers;
       headers.cookie = COOKIE || redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
       // headers.host = config.host;
-      // console.log("headers.cookie", headers.cookie)
+      // console.info("headers.cookie", headers.cookie)
       delete headers['x-requested-with'];
       var requestPath = router(urlParsed.path, ROUTER);
-      // console.log('requestPath:', requestPath);
+      // console.info('requestPath:', requestPath);
       var urlOptions = {
         host: url.parse(TARGET_SERVER).hostname,
         port: url.parse(TARGET_SERVER).port,
@@ -90,11 +93,11 @@ module.exports = function start(config) {
         headers: headers,
         rejectUnauthorized: false
       };
-      // console.log(headers)
+      console.log('headers', headers);
       // proxy to target server
       var forwardUrl = url.resolve(TARGET_SERVER, requestPath);
       // log forwarding message
-      console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
+      console.info('fowarding', filePath.red, 'to', forwardUrl.cyan);
       var httpOrHttps = url.parse(TARGET_SERVER).protocol === 'http:' ? http : https;
       var forwardRequest = httpOrHttps.request(urlOptions, function(response) {
         // set headers to the headers in origin request
@@ -105,7 +108,7 @@ module.exports = function start(config) {
         });
 
         response.on('end', function() {
-          // console.log(body)
+          // console.info(body)
           res.end();
         });
       });

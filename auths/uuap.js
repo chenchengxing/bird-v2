@@ -61,7 +61,7 @@ module.exports = function (config, jar) {
         }, function(error, response, body) {
           // do nothing, jar record the session automatically
           // var cookies = jar.getCookies(TARGET_SERVER);
-          // console.log(error,jar,'==============');
+          console.log(error, jar, '==============');
           resolve()
         })
       })
