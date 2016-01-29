@@ -6,16 +6,12 @@ var request = require('request')
 // request.debug = true;
 var colors = require('colors');
 // var http = require('http');
-var cheerio = require('cheerio')
-var mime = require('mime-types');
+
 var http = require('http-debug').http;
 var https = require('http-debug').https; 
 // http.debug = 2;
 var Promise = require('bluebird');
 var BIRD_CHANGE_USER_PATHNAME = '/bbbbiiiirrrrdddd'
-
-var BIRD_USER_SCRIPT = fs.readFileSync(path.join(__dirname, 'devtools/change-user-script.js'), 'utf8');
-var BIRD_EXTEND_SCRIPT = fs.readFileSync(path.join(__dirname, 'devtools/bird-extend-script.js'), 'utf8');
 
 /**
  * start bird with config
@@ -37,7 +33,7 @@ module.exports = function start(config) {
   var DEV_TOOL = config.dev_tool;
   var ROUTER = config.router;
   var COOKIE = config.cookie;
-  var AUTO_INDEX = config.autoIndex ? config.autoIndex.split(/\x20+/) : ['index.html']
+  // var AUTO_INDEX = config.autoIndex ? config.autoIndex.split(/\x20+/) : ['index.html']
   //保证路径完整
   var TARGET_SERVER = config.server.slice('-1') === '/' ? config.server : config.server + '/';
   var jar = request.jar();  // jar to store cookies
@@ -56,6 +52,7 @@ module.exports = function start(config) {
       // setup bird app
       var app = new express()
       app.all('*', require('./lib/mock')(config))
+      app.all('*', require('./lib/static')(config))
       app.all('*', require('./lib/change-user')(config))
       app.all('*', require('./lib/logout')(config))
       app.all('*', proxy)
@@ -73,106 +70,57 @@ module.exports = function start(config) {
     return config;
   }
   
-
   function proxy (req, res, next) {
     var urlParsed = url.parse(req.url);
     var filePath = resolveFilePath(config.staticFileRootDirPath, urlParsed.pathname);
-    if (AUTO_INDEX) {
-      // ================
-      // TODO, local router rule add here!
-      //=================
-      // server as static file
+    if (true) {
+      // set up forward request
+      var headers = req.headers;
+      headers.cookie = COOKIE || redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
+      // headers.host = config.host;
+      // console.log("headers.cookie", headers.cookie)
+      delete headers['x-requested-with'];
+      var requestPath = router(urlParsed.path, ROUTER);
+      // console.log('requestPath:', requestPath);
+      var urlOptions = {
+        host: url.parse(TARGET_SERVER).hostname,
+        port: url.parse(TARGET_SERVER).port,
+        path: requestPath,
+        method: req.method,
+        headers: headers,
+        rejectUnauthorized: false
+      };
+      // console.log(headers)
+      // proxy to target server
+      var forwardUrl = url.resolve(TARGET_SERVER, requestPath);
+      // log forwarding message
+      console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
+      var httpOrHttps = url.parse(TARGET_SERVER).protocol === 'http:' ? http : https;
+      var forwardRequest = httpOrHttps.request(urlOptions, function(response) {
+        // set headers to the headers in origin request
+        res.writeHead(response.statusCode, response.headers);
+        response.on('data', function(chunk) {
+          // body += chunk;
+          res.write(chunk);
+        });
 
-      if (exists(filePath)) {
-        // find index file from directory, by option: autoIndex
-        if (isDir(filePath)) {
-          var fp;
-          for (var i = 0; i < AUTO_INDEX.length; i++) {
-            fp = path.join(filePath, AUTO_INDEX[i]);
-            if (isFile(fp)) {
-                filePath = fp;
-                break;
-            }
-          }
-        }
+        response.on('end', function() {
+          // console.log(body)
+          res.end();
+        });
+      });
+      forwardRequest.on('error', function(e) {
+        console.error('problem with request: ' + e.message);
+      });
 
-        if (!isFile(filePath)) {
-          emptyPage(res, filePath);
-        }
-      }
+      req.addListener('data', function(chunk) {
+        forwardRequest.write(chunk);
+      });
+
+      req.addListener('end', function() {
+        forwardRequest.end();
+      });
     }
-    fs.stat(filePath, function(err, stats) {
-      if (err) {
-        // set up forward request
-        var headers = req.headers;
-        headers.cookie = COOKIE || redeemCookieFromJar(jar.getCookies(TARGET_SERVER));
-        // headers.host = config.host;
-        // console.log("headers.cookie", headers.cookie)
-        delete headers['x-requested-with'];
-        var requestPath = router(urlParsed.path, ROUTER);
-        // console.log('requestPath:', requestPath);
-        var urlOptions = {
-          host: url.parse(TARGET_SERVER).hostname,
-          port: url.parse(TARGET_SERVER).port,
-          path: requestPath,
-          method: req.method,
-          headers: headers,
-          rejectUnauthorized: false
-        };
-        // console.log(headers)
-        // proxy to target server
-        var forwardUrl = url.resolve(TARGET_SERVER, requestPath);
-        // log forwarding message
-        console.log('fowarding', filePath.red, 'to', forwardUrl.cyan);
-        var httpOrHttps = url.parse(TARGET_SERVER).protocol === 'http:' ? http : https;
-        var forwardRequest = httpOrHttps.request(urlOptions, function(response) {
-          // set headers to the headers in origin request
-          res.writeHead(response.statusCode, response.headers);
-          response.on('data', function(chunk) {
-            // body += chunk;
-            res.write(chunk);
-          });
-
-          response.on('end', function() {
-            // console.log(body)
-            res.end();
-          });
-        });
-        forwardRequest.on('error', function(e) {
-          console.error('problem with request: ' + e.message);
-        });
-
-        req.addListener('data', function(chunk) {
-          forwardRequest.write(chunk);
-        });
-
-        req.addListener('end', function() {
-          forwardRequest.end();
-        });
-      } else {
-        // server as static file
-        fs.readFile(filePath, function(err, buffer) {
-          if (isHtmlPage(buffer)) {
-            // add something nasty in it, that's where bird dev-tool exists
-            var $ = cheerio.load(buffer.toString('utf-8'));
-            $('head').append('<script type="text/javascript">' + BIRD_EXTEND_SCRIPT + '</script>')
-            $('head').append('<script type="text/javascript">window.birdv2.config=' + JSON.stringify(config) + '</script>')
-            if (DEV_TOOL) {
-              $('head').append('<script type="text/javascript">' + BIRD_USER_SCRIPT + '</script>')
-              // console.log($.html())
-            }
-            res.setHeader('Content-Type', mime.lookup('.html'));
-            res.write($.html())
-            res.end();
-          } else {
-            var mimeType = mime.lookup(path.extname(filePath));
-            res.setHeader('Content-Type', mimeType);
-            res.write(buffer);
-            res.end();
-          }
-        })
-      }
-    })
   }
 };
 
@@ -205,12 +153,6 @@ function redeemCookieFromJar (cookieArray) {
   return result;
 }
 
-function isHtmlPage (buffer) {
-  var temp = buffer.slice(0, 20);
-  var reg = new RegExp('<!DOCTYPE HTML>', 'i')
-  return reg.test(temp.toString('utf-8'))
-}
-
 function router (url, router) {
   var path = '';
   var reg;
@@ -227,20 +169,3 @@ function router (url, router) {
   return path;
 }
 
-function exists(p) {
-  return fs.existsSync(p);
-}
-
-function isFile(p) {
-  return exists(p) && fs.statSync(p).isFile();
-}
-
-function isDir(p) {
-  return exists(p) && fs.statSync(p).isDirectory();
-}
-
-function emptyPage(res, fp) {
-  console.log('Local', fp.red, 'not exists'.cyan);
-  res.status(404).send('Not found' + (fp ? ' "' + fp + '"' : '') + '!');
-  res.end();
-}
