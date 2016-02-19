@@ -141,6 +141,11 @@ module.exports = function start(config) {
               res.end();
             });
           });
+
+          if (req._body) {
+            forwardRequest.write(JSON.stringify(req.body))
+          }
+
           forwardRequest.on('error', function(e) {
             console.error('problem with request: ' + e.message);
           });
