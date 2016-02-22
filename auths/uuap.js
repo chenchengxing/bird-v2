@@ -48,6 +48,8 @@ module.exports = function (config, jar) {
         },
         jar: jar
       }, function(err, httpResponse, body) {
+        // http://stackoverflow.com/questions/20082893/unable-to-verify-leaf-signature
+        process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
         // request the logined uuap again, and let it redirect for us
         // erp feapps need addition routing policy...
         var toUrl = UUAP_SERVER + '/login?service=' + encodeURIComponent(TARGET_SERVER)
