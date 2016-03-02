@@ -36,16 +36,24 @@ module.exports = function start(config) {
   var jar = request.jar();  // jar to store cookies
   config = configResolver(config, jar);
   var auth = config.auth;
-  auth(config, jar).then(function () {
-    if (config.middleware) {
-      function compose(middleware) {
-        return function (req, res, next) {
-          connect.apply(null, middleware.concat(next.bind(null, null))).call(null, req, res)
-        }
+  if (config.middleware) {
+    auth(config, jar);
+    function listAll(list) {
+      return function (req, res, next) {
+        (function iter(i) {
+          var mid = list[i]
+          if (!mid) return next()
+          mid(req, res, function (err) {
+            if (err) return next(err)
+            iter(i + 1)
+          })
+        }(0))
       }
-      // http://stackoverflow.com/questions/20274483/how-do-i-combine-connect-middleware-into-one-middleware
-      return compose([proxy, require('./lib/mock')(config), require('./lib/change-user')(config), require('./lib/logout')(config)]);
-    } else {
+    }
+    // http://stackoverflow.com/questions/20274483/how-do-i-combine-connect-middleware-into-one-middleware
+    return listAll([require('./lib/mock')(config), require('./lib/change-user')(config), require('./lib/logout')(config), proxy]);
+  } else {
+    auth(config, jar).then(function () {
       // setup bird app
       var app = new express()
       app.all('*', require('./lib/mock')(config))
@@ -56,8 +64,8 @@ module.exports = function start(config) {
       // go!
       app.listen(config.bird_port)
       console.info('BIRD'.rainbow, '============', config.name, 'RUNNING at', 'http://localhost:' + config.bird_port, '===============', 'BIRD'.rainbow);
-    }
-  })
+    })
+  }
 
   function configResolver (originConfig, jar) {
     var config = Object.assign({}, originConfig);
@@ -106,6 +114,11 @@ module.exports = function start(config) {
           res.end();
         });
       });
+
+      if (req._body) {
+        forwardRequest.write(JSON.stringify(req.body))
+      }
+
       forwardRequest.on('error', function(e) {
         console.error('problem with request: ' + e.message);
       });
