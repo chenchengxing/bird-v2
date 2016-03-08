@@ -46,7 +46,7 @@ require('bird')(config)
 
 ### as middleware with mock
 
-请参考erp-finfap
+请参考finfa
 
 ## config
 - bird的配制可是一个object,也可以是一个array, eg:
