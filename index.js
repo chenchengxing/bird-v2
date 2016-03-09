@@ -51,7 +51,7 @@ module.exports = function start(config) {
       }
     }
     // http://stackoverflow.com/questions/20274483/how-do-i-combine-connect-middleware-into-one-middleware
-    return listAll([require('./lib/mock')(config), require('./lib/change-user')(config), require('./lib/logout')(config), proxy]);
+    return listAll([require('./lib/mock')(config), require('./lib/change-user')(config), proxy]);
   } else {
     auth(config, jar).then(function () {
       // setup bird app
@@ -59,7 +59,6 @@ module.exports = function start(config) {
       app.all('*', require('./lib/mock')(config))
       app.all('*', require('./lib/static')(config))
       app.all('*', require('./lib/change-user')(config))
-      app.all('*', require('./lib/logout')(config))
       app.all('*', proxy)
       // go!
       app.listen(config.bird_port)
