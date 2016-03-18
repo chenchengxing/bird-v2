@@ -19,6 +19,7 @@ module.exports = function (config, jar) {
     var PASSWORD_SUFFIX = config.password_suffix;
     var USERNAME = config.username;
     clearTargetServerJar(jar, TARGET_SERVER, UUAP_SERVER);
+    // request and login in uuap
     request({
       url: UUAP_SERVER,
       jar: jar
