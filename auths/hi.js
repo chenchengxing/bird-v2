@@ -19,20 +19,22 @@ var Promise = require('bluebird');
 module.exports = function (config, jar) {
   var promise = new Promise(function hiLogin(resolve) {
     var AUTH_URL = config.auth_url;
-    var HEADERS = config.auth_server_headers || 'Content-Type: application/json';
+    var HEADERS = config.auth_server_headers || {'Content-Type': 'application/json'};
     //保证路径完整
     var TARGET_SERVER = config.server.slice('-1') === '/' ? config.server : config.server + '/';
-
+    var METHOD = config.method || 'POST';
     var USERNAME = config.username;
     var PASSWORD_SUFFIX = config.password_suffix;
+    var PASSWORD = config.password;
     // clearTargetServerJar(jar, TARGET_SERVER, UUAP_SERVER);
     request({
-      method: 'POST',
+      method: METHOD,
       url: AUTH_URL,
       json: true,
+      headers: HEADERS,
       body: {
         loginName: USERNAME,
-        password: USERNAME + (PASSWORD_SUFFIX || '')
+        password: PASSWORD
       },
       jar: jar
     }, function(error, response, body) {
