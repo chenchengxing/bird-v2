@@ -42,37 +42,32 @@ module.exports = function start(config) {
       require('./lib/proxy')(config)
     ]);
   } else {
-    fetchConfig(config).then(function (response) {
-      // console.info(response.body)
-      var data = JSON.parse(response.body)
-      if (data.code === 200) {
-        // console.info(config)
-        config = _.extend(config, data.data);
-        console.info(config)
-        if (config.ifAuth) {
-          config.auth(config, jar).then(function () {
-            // setup bird app
-            var app = new express()
-            app.all('*', require('./lib/mock')(config))
-            app.all('*', require('./lib/static')(config))
-            app.all('*', require('./lib/change-user')(config))
-            if (config.ifProxy) {
-              app.all('*', require('./lib/proxy')(config))
-            }
-            // go!
-            app.listen(config.birdPort)
-            console.info('BIRD'.rainbow, '============', config.name || '', 'RUNNING at', 'http://localhost:' + config.birdPort, '===============', 'BIRD'.rainbow);
-          })
-        } else {
+    fetchConfig(config).then(function (platformConfig) {
+      config = _.extend(config, platformConfig);
+      config = configResolver(config, jar);
+      if (config.ifAuth) {
+        config.auth(config, jar).then(function () {
+          // setup bird app
           var app = new express()
           app.all('*', require('./lib/mock')(config))
           app.all('*', require('./lib/static')(config))
+          app.all('*', require('./lib/change-user')(config))
           if (config.ifProxy) {
             app.all('*', require('./lib/proxy')(config))
           }
+          // go!
           app.listen(config.birdPort)
           console.info('BIRD'.rainbow, '============', config.name || '', 'RUNNING at', 'http://localhost:' + config.birdPort, '===============', 'BIRD'.rainbow);
+        })
+      } else {
+        var app = new express()
+        app.all('*', require('./lib/mock')(config))
+        app.all('*', require('./lib/static')(config))
+        if (config.ifProxy) {
+          app.all('*', require('./lib/proxy')(config))
         }
+        app.listen(config.birdPort)
+        console.info('BIRD'.rainbow, '============', config.name || '', 'RUNNING at', 'http://localhost:' + config.birdPort, '===============', 'BIRD'.rainbow);
       }
     });
   }
