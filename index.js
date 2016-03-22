@@ -1,6 +1,8 @@
 var express = require('express')
 var request = require('request')
 var colors = require('colors');
+var fetchConfig = require('./lib/fetch-config-from-platform');
+var _ = require('lodash');
 
 /**
  * start bird with config
@@ -28,10 +30,10 @@ module.exports = function start(config) {
   if (!config.debug) {
     global.console.log = function (){};
   }
-
+  
   if (config.middleware) {
     if (config.ifAuth) {
-      auth(config, jar);
+      config.auth(config, jar);
     }
     // http://stackoverflow.com/questions/20274483/how-do-i-combine-connect-middleware-into-one-middleware
     return listAll([
@@ -40,30 +42,39 @@ module.exports = function start(config) {
       require('./lib/proxy')(config)
     ]);
   } else {
-    if (config.ifAuth) {
-      config.auth(config, jar).then(function () {
-        // setup bird app
-        var app = new express()
-        app.all('*', require('./lib/mock')(config))
-        app.all('*', require('./lib/static')(config))
-        app.all('*', require('./lib/change-user')(config))
-        if (config.ifProxy) {
-          app.all('*', require('./lib/proxy')(config))
+    fetchConfig(config).then(function (response) {
+      // console.info(response.body)
+      var data = JSON.parse(response.body)
+      if (data.code === 200) {
+        // console.info(config)
+        config = _.extend(config, data.data);
+        console.info(config)
+        if (config.ifAuth) {
+          config.auth(config, jar).then(function () {
+            // setup bird app
+            var app = new express()
+            app.all('*', require('./lib/mock')(config))
+            app.all('*', require('./lib/static')(config))
+            app.all('*', require('./lib/change-user')(config))
+            if (config.ifProxy) {
+              app.all('*', require('./lib/proxy')(config))
+            }
+            // go!
+            app.listen(config.birdPort)
+            console.info('BIRD'.rainbow, '============', config.name || '', 'RUNNING at', 'http://localhost:' + config.birdPort, '===============', 'BIRD'.rainbow);
+          })
+        } else {
+          var app = new express()
+          app.all('*', require('./lib/mock')(config))
+          app.all('*', require('./lib/static')(config))
+          if (config.ifProxy) {
+            app.all('*', require('./lib/proxy')(config))
+          }
+          app.listen(config.birdPort)
+          console.info('BIRD'.rainbow, '============', config.name || '', 'RUNNING at', 'http://localhost:' + config.birdPort, '===============', 'BIRD'.rainbow);
         }
-        // go!
-        app.listen(config.birdPort)
-        console.info('BIRD'.rainbow, '============', config.name || '', 'RUNNING at', 'http://localhost:' + config.birdPort, '===============', 'BIRD'.rainbow);
-      })
-    } else {
-      var app = new express()
-      app.all('*', require('./lib/mock')(config))
-      app.all('*', require('./lib/static')(config))
-      if (config.ifProxy) {
-        app.all('*', require('./lib/proxy')(config))
       }
-      app.listen(config.birdPort)
-      console.info('BIRD'.rainbow, '============', config.name || '', 'RUNNING at', 'http://localhost:' + config.birdPort, '===============', 'BIRD'.rainbow);
-    }
+    });
   }
 }
 
