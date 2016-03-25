@@ -8,6 +8,9 @@ var colors = require('colors');
 // var http = require('http');
 var cheerio = require('cheerio')
 var Promise = require('bluebird');
+
+process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0';
+
 /*
   uuap--默认的登录方式
 */
@@ -24,6 +27,7 @@ module.exports = function (config, jar) {
       url: UUAP_SERVER,
       jar: jar
     }, function(error, response, body) {
+
       // use cheerio to parse dom
       var $ = cheerio.load(body);
       var hiddenInputs = $('#fm1 input[type=hidden]');
