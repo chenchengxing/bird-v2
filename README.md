@@ -118,6 +118,15 @@ require('bird')(config)
   use_local_data: {
     '/ar': '/your/data/path'
   }
+  // #mock配置
+  mock: {
+    path: '../mock',  // 相对于staticFileRootDirPath的路径，用于存放mock文件的文件夹
+    map: {
+      '/test/test': 'test'  // key为请求路径，value为映射的js文件
+    }
+  }
+  // #mock缓存功能配置, 需要在配置好mock才可用
+  mock_cache: __dirname,  // 设置为 __dirname则爬取接口数据存放到mock文件夹中且更新birdfile.js中的mock.map
   ```
 ## extendable
 
