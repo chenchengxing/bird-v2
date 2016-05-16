@@ -8,6 +8,7 @@ var colors = require('colors');
  * @return {undefined}
  */
 module.exports = function start(config) {
+  Object.assign = copyObj();
   // allow multiple bird instances
   if (config && Array.isArray(config)) {
     for (var i = 0; i < config.length; i++) {
@@ -102,4 +103,21 @@ function listAll(list) {
       })
     }(0))
   }
+}
+
+function copyObj(target, source) {
+  if (Object.assign && typeof Object.assign === 'function' && !Object.assign.toString().match('copyObj')) {
+    return Object.assign;
+  } else {
+    return assign;
+  }
+  function assign(target, source) {
+      for (var i in source) {
+        target[i] = source[i];
+        if (typeof source[i] === 'object') {
+          assign(target[i], source[i]);
+        }
+      }
+      return target;
+    }
 }
